@@ -1,0 +1,45 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/devcontainers/templates/tree/main/src/docker-existing-docker-compose
+{
+  "name": "adminlte-laravel12",
+  // 新しい統合されたdocker-compose.ymlを使用
+  "dockerComposeFile": [
+    "../docker-compose.yml"
+  ],
+  // The 'service' property is the name of the service for the container that VS Code should
+  // use. Update this value and .devcontainer/docker-compose.yml to the real service name.
+  "service": "php-fpm",
+  // The optional 'workspaceFolder' property is the path VS Code should open by default when
+  // connected. This is typically a file mount in .devcontainer/docker-compose.yml
+  "workspaceFolder": "/app",
+  // Use 'forwardPorts' to make a list of ports inside the container available locally.
+  "forwardPorts": [
+    80,
+    8080,
+    5432
+  ],
+  // 環境変数の設定
+  "containerEnv": {
+    "ENVIRONMENT": "local",
+    "DOCKER_TARGET": "local"
+  },
+  // コンテナ作成後のコマンド実行
+  "postCreateCommand": "composer install --no-interaction && mkdir -p storage/logs storage/framework/cache storage/framework/sessions storage/framework/views bootstrap/cache && chmod -R 775 storage bootstrap/cache",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "bmewburn.vscode-intelephense-client",
+        // "onecentlin.laravel-extension-pack",
+        "DEVSENSE.composer-php-vscode",
+        "ms-ossdata.vscode-postgresql",
+        "laravel.vscode-laravel",
+        "EditorConfig.EditorConfig",
+        "shufo.vscode-blade-formatter",
+        "PKief.material-icon-theme",
+        "oderwat.indent-rainbow"
+      ]
+    }
+  }
+  // Uncomment to connect as an existing user other than the container default. More info: https://aka.ms/dev-containers-non-root.
+  // "remoteUser": "www-data"
+}

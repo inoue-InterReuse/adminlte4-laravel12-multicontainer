@@ -1,0 +1,88 @@
+services:
+    nginx:
+        build:
+            context: ../
+            dockerfile: ./docker/nginx/Dockerfile
+            target: local
+        ports:
+            - 80:80
+        depends_on:
+            - php-fpm
+        healthcheck:
+            test: [ "CMD-SHELL", "nc -zv localhost 80 || exit 1" ]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+        volumes:
+            - ../public:/app/public
+        environment:
+            PHP_FPM_HOST: "php-fpm"
+    php-fpm:
+        build:
+            context: ../
+            dockerfile: ./docker/php-fpm/Dockerfile
+            target: local
+        volumes:
+            - ../:/app
+        depends_on:
+            postgres:
+                condition: service_healthy
+        healthcheck:
+            test: [ "CMD-SHELL", "nc -zv localhost 9000 || exit 1" ]
+            interval: 30s
+            timeout: 10s
+            retries: 3
+            start_period: 60s
+        environment:
+            APP_NAME: "adminlte-laravel"
+            APP_ENV: "local"
+            APP_KEY: "base64:ZtTVwmCnumCzklw4zOOwQa0wvV5cc4ScVc7+ZtRCvRE="
+            APP_DEBUG: "true"
+            APP_URL: "http://localhost"
+            LOG_CHANNEL: "daily"
+            DB_CONNECTION: "pgsql"
+            DB_HOST: "postgres"
+            DB_PORT: "5432"
+            DB_DATABASE: "laravel"
+            DB_USERNAME: "admin"
+            DB_PASSWORD: "teriyaki"
+            SESSION_DRIVER: "cookie"
+            VIEW_COMPILED_PATH: "/tmp/laravel/storage/framework/views"
+            APP_SERVICES_CACHE: "/tmp/laravel/bootstrap/cache/services.php"
+            APP_PACKAGES_CACHE: "/tmp/laravel/bootstrap/cache/packages.php"
+            APP_CONFIG_CACHE: "/tmp/laravel/bootstrap/cache/config.php"
+            APP_ROUTES_CACHE: "/tmp/laravel/bootstrap/cache/routes-v7.php"
+            APP_EVENTS_CACHE: "/tmp/laravel/bootstrap/cache/events.php"
+            CACHE_DRIVER: "array"
+    postgres:
+        build:
+            context: ../
+            dockerfile: ./docker/postgres/Dockerfile
+        environment:
+            TZ: "Asia/Tokyo"
+            POSTGRES_DB: "laravel"
+            POSTGRES_USER: "admin"
+            POSTGRES_PASSWORD: "teriyaki"
+        volumes:
+            - postgres-data:/var/lib/postgresql/data
+            - ../docker/postgres/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
+            - ../docker/postgres/etc/postgresql/postgresql.conf:/etc/postgresql/postgresql.conf
+        ports:
+            - "5432:5432"
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U admin -d laravel"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+    adminer:
+        image: adminer:latest
+        depends_on:
+            - postgres
+        ports:
+            - 8080:8080
+        environment:
+            ADMINER_DEFAULT_SERVER: postgres
+            ADMINER_DESIGN: pepa-linha
+volumes:
+    postgres-data:
+        driver: local
