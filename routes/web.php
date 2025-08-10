@@ -9,8 +9,15 @@ use Illuminate\Support\Facades\Log;
 Route::middleware(['web'])->group(function () {
 
   Route::get('/', function () {
+    if (Auth::check()) {
+      return view('dashboard');
+    }
+    return redirect('/login');
+  })->name('dashboard');
+
+  Route::get('/dashboard', function () {
     return view('dashboard');
-  })->middleware(['auth', 'verified'])->name('dashboard');
+  })->middleware(['auth', 'verified'])->name('dashboard.auth');
 
   Route::controller(UserListController::class)->group(function () {
     Route::get('/settings/user-list', 'index')->name('user-list');
