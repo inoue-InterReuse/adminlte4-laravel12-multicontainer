@@ -1,0 +1,39 @@
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - echo Logging in to Amazon ECR...
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+      - REPOSITORY_URI=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME
+      - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+      - IMAGE_TAG=${COMMIT_HASH:=latest}
+
+  build:
+    commands:
+      - echo Build started on `date`
+      - echo Building the Docker images...
+      - docker build -t $REPOSITORY_URI:nginx-latest ./docker/nginx
+      - docker build -t $REPOSITORY_URI:php-fpm-latest ./docker/php-fpm
+      - docker tag $REPOSITORY_URI:nginx-latest $REPOSITORY_URI:nginx-$IMAGE_TAG
+      - docker tag $REPOSITORY_URI:php-fpm-latest $REPOSITORY_URI:php-fpm-$IMAGE_TAG
+
+  post_build:
+    commands:
+      - echo Build completed on `date`
+      - echo Pushing the Docker images...
+      - docker push $REPOSITORY_URI:nginx-latest
+      - docker push $REPOSITORY_URI:php-fpm-latest
+      - docker push $REPOSITORY_URI:nginx-$IMAGE_TAG
+      - docker push $REPOSITORY_URI:php-fpm-$IMAGE_TAG
+      - echo Writing image definitions file...
+      - printf '[{"name":"'$PROJECT_NAME'-'$BUILD_ENVIRONMENT'-nginx","imageUri":"%s"},{"name":"'$PROJECT_NAME'-'$BUILD_ENVIRONMENT'-php-fpm","imageUri":"%s"}]' $REPOSITORY_URI:nginx-latest $REPOSITORY_URI:php-fpm-latest > imagedefinitions.json
+      - |
+        if [ "$ENABLE_CHATWORK_NOTIFICATION" = "true" ]; then
+          echo "Sending Chatwork notification..."
+          echo "Build completed successfully for commit $COMMIT_HASH"
+        fi
+
+artifacts:
+  files:
+    - imagedefinitions.json
