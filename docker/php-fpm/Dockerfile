@@ -41,7 +41,8 @@ RUN docker-php-ext-install -j$(nproc) \
 ENV LANG=ja_JP.UTF-8
 ENV TZ Asia/Tokyo
 
-COPY --from=composer:2.8.7 /usr/bin/composer /usr/local/bin/composer
+# Install Composer directly without Docker Hub dependency
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
 COPY docker/php-fpm/usr/local/bin/origin-docker-entrypoint.sh /usr/local/bin/origin-docker-entrypoint.sh
 ENTRYPOINT ["sh", "/usr/local/bin/origin-docker-entrypoint.sh"]
