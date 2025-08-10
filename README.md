@@ -17,3 +17,4 @@ php artisan db:seed
 11. http://localhost:8080 にアクセスしてphpMyAdminを確認できます。
 
 12. 作業後はフォルダーローカルで再度開く
+# Pipeline Test 2025年 8月10日 日曜日 15時16分46秒 JST
