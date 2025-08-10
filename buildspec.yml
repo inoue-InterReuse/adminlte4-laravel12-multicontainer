@@ -1,11 +1,6 @@
-version: 0.  build:
-    commands:
-      - echo Build started on `date`
-      - echo Building the Docker images...
-      - docker build -t $REPOSITORY_URI:nginx-latest -f ./docker/nginx/Dockerfile --target deploy .
-      - docker build -t $REPOSITORY_URI:php-fpm-latest -f ./docker/php-fpm/Dockerfile --target deploy .
-      - docker tag $REPOSITORY_URI:nginx-latest $REPOSITORY_URI:nginx-$IMAGE_TAG
-      - docker tag $REPOSITORY_URI:php-fpm-latest $REPOSITORY_URI:php-fpm-$IMAGE_TAGs:
+version: 0.2
+
+phases:
   pre_build:
     commands:
       - echo Logging in to Amazon ECR...
@@ -18,8 +13,8 @@ version: 0.  build:
     commands:
       - echo Build started on `date`
       - echo Building the Docker images...
-      - docker build -t $REPOSITORY_URI:nginx-latest -f ./docker/nginx/Dockerfile .
-      - docker build -t $REPOSITORY_URI:php-fpm-latest -f ./docker/php-fpm/Dockerfile .
+      - docker build -t $REPOSITORY_URI:nginx-latest -f ./docker/nginx/Dockerfile --target deploy .
+      - docker build -t $REPOSITORY_URI:php-fpm-latest -f ./docker/php-fpm/Dockerfile --target deploy .
       - docker tag $REPOSITORY_URI:nginx-latest $REPOSITORY_URI:nginx-$IMAGE_TAG
       - docker tag $REPOSITORY_URI:php-fpm-latest $REPOSITORY_URI:php-fpm-$IMAGE_TAG
 
