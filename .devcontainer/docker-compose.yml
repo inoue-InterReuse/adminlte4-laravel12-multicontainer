@@ -39,6 +39,7 @@ services:
             APP_KEY: "base64:ZtTVwmCnumCzklw4zOOwQa0wvV5cc4ScVc7+ZtRCvRE="
             APP_DEBUG: "true"
             APP_URL: "http://localhost"
+            ASSET_URL: "http://localhost"
             LOG_CHANNEL: "daily"
             DB_CONNECTION: "pgsql"
             DB_HOST: "postgres"
