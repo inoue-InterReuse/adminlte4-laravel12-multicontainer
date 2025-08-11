@@ -29,6 +29,20 @@ phases:
       - echo Writing image definitions file...
       - printf '[{"name":"'$PROJECT_NAME'-'$BUILD_ENVIRONMENT'-nginx","imageUri":"%s"},{"name":"'$PROJECT_NAME'-'$BUILD_ENVIRONMENT'-php-fpm","imageUri":"%s"}]' $REPOSITORY_URI:nginx-latest $REPOSITORY_URI:php-fpm-latest > imagedefinitions.json
       - |
+        # CloudFront cache invalidation after successful deployment
+        if [ -n "$CLOUDFRONT_DISTRIBUTION_ID" ]; then
+          echo "Creating CloudFront cache invalidation for distribution $CLOUDFRONT_DISTRIBUTION_ID..."
+          INVALIDATION_ID=$(aws cloudfront create-invalidation \
+            --distribution-id "$CLOUDFRONT_DISTRIBUTION_ID" \
+            --paths "/*" \
+            --query 'Invalidation.Id' \
+            --output text)
+          echo "CloudFront invalidation created: $INVALIDATION_ID"
+          echo "Cache invalidation will complete in 5-15 minutes"
+        else
+          echo "CLOUDFRONT_DISTRIBUTION_ID not set, skipping cache invalidation"
+        fi
+      - |
         if [ "$ENABLE_CHATWORK_NOTIFICATION" = "true" ]; then
           echo "Sending Chatwork notification..."
           echo "Build completed successfully for commit $COMMIT_HASH"
