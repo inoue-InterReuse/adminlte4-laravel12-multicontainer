@@ -83,3 +83,70 @@ class LoginRequest extends FormRequest
         return Str::transliterate(Str::lower($this->string('email')).'|'.$this->ip());
     }
 }
+
+    /**
+     * Handle failed authentication attempt
+     */
+    public function handleFailedAuth(): void
+    {
+        $ip = $this->ip();
+        $email = $this->input('email');
+
+        // 失敗試行回数をカウント
+        $attempts = cache()->get("failed_login_attempts_{$ip}", 0) + 1;
+        cache()->put("failed_login_attempts_{$ip}", $attempts, 3600); // 1時間
+
+        // 疑わしい活動の検知
+        if ($attempts >= 5) {
+            Log::alert('Multiple failed login attempts detected', [
+                'ip' => $ip,
+                'email' => $email,
+                'attempts' => $attempts,
+                'user_agent' => $this->userAgent(),
+                'timestamp' => now()->toISOString()
+            ]);
+
+            // CloudWatch Alarm トリガー
+            $this->sendFailedLoginMetric($attempts);
+        }
+
+        // 地理的位置情報チェック（IPアドレスベース）
+        $this->checkGeolocation($ip);
+    }
+
+    private function sendFailedLoginMetric(int $attempts): void
+    {
+        try {
+            $command = sprintf(
+                'aws cloudwatch put-metric-data --namespace "LaravelAuth" --metric-data MetricName=FailedLoginAttempts,Value=%d,Unit=Count --region %s',
+                $attempts,
+                escapeshellarg(env('AWS_DEFAULT_REGION', 'ap-northeast-1'))
+            );
+            exec($command);
+        } catch (\Exception $e) {
+            Log::error('Failed to send failed login metric', ['error' => $e->getMessage()]);
+        }
+    }
+
+    private function checkGeolocation(string $ip): void
+    {
+        // 簡易的な地理的チェック（本格運用時は GeoIP サービス使用推奨）
+        $knownSafeIPs = [
+            '123.198.241.102', // 設定済み許可IP
+            '203.141.155.122'
+        ];
+
+        if (!in_array($ip, $knownSafeIPs) && !$this->isPrivateIP($ip)) {
+            Log::warning('Login attempt from unknown location', [
+                'ip' => $ip,
+                'email' => $this->input('email'),
+                'user_agent' => $this->userAgent(),
+                'timestamp' => now()->toISOString()
+            ]);
+        }
+    }
+
+    private function isPrivateIP(string $ip): bool
+    {
+        return filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false;
+    }
